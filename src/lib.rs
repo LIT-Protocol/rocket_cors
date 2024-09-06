@@ -1515,13 +1515,13 @@ impl<'r> FromRequest<'r> for Guard<'r> {
             Outcome::Success(options) => options,
             _ => {
                 let error = Error::MissingCorsInRocketState;
-                return Outcome::Error((error.status(), error));
+                return Outcome::Failure((error.status(), error));
             }
         };
 
         match Response::validate_and_build(options, request) {
             Ok(response) => Outcome::Success(Self::new(response)),
-            Err(error) => Outcome::Error((error.status(), error)),
+            Err(error) => Outcome::Failure((error.status(), error)),
         }
     }
 }
@@ -1759,7 +1759,7 @@ fn origin(request: &Request<'_>) -> Result<Option<Origin>, Error> {
     match Origin::from_request_sync(request) {
         Outcome::Forward(_) => Ok(None),
         Outcome::Success(origin) => Ok(Some(origin)),
-        Outcome::Error((_, err)) => Err(err),
+        Outcome::Failure((_, err)) => Err(err),
     }
 }
 
@@ -1768,7 +1768,7 @@ fn request_method(request: &Request<'_>) -> Result<Option<AccessControlRequestMe
     match AccessControlRequestMethod::from_request_sync(request) {
         Outcome::Forward(_) => Ok(None),
         Outcome::Success(method) => Ok(Some(method)),
-        Outcome::Error((_, err)) => Err(err),
+        Outcome::Failure((_, err)) => Err(err),
     }
 }
 
@@ -1777,7 +1777,7 @@ fn request_headers(request: &Request<'_>) -> Result<Option<AccessControlRequestH
     match AccessControlRequestHeaders::from_request_sync(request) {
         Outcome::Forward(_) => Ok(None),
         Outcome::Success(geaders) => Ok(Some(geaders)),
-        Outcome::Error((_, err)) => Err(err),
+        Outcome::Failure((_, err)) => Err(err),
     }
 }
 
@@ -1997,7 +1997,7 @@ impl rocket::route::Handler for CatchAllOptionsRouteHandler {
     ) -> rocket::route::Outcome<'r> {
         let guard: Guard<'_> = match request.guard().await {
             Outcome::Success(guard) => guard,
-            Outcome::Error((status, _)) => return rocket::route::Outcome::Error(status),
+            Outcome::Failure((status, _)) => return rocket::route::Outcome::Failure(status),
             Outcome::Forward(_) => unreachable!("Should not be reachable"),
         };
 
